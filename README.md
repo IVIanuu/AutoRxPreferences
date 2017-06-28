@@ -1,9 +1,9 @@
 # AutoRxPreferences
-Annotation processing wrapper around RxPreferences
+Annotation processing for RxPreferences
 
 ## Introduction
 RxPreferences by f2prateek is great library but it has a few downsides 
-1. You have to mess around with the pref keys
+1. You have to mess around with the pref keys instead of access your preferences by name which feels more natural
 2. If you want to use your own default values you have to add them to every method you write
 3. Saving custom objects is to complicated
 
@@ -40,7 +40,7 @@ The class should be look like this
 class MyPreferences {
     @Key String accessToken;
     @Key UserData userData;
-    @Key Boolean isLoggedIn;
+    @Key Boolean isLoggedIn = false; // this will be default value
 }
 ```
 
@@ -137,4 +137,27 @@ public final class MyPreferences_ extends MyPreferences {
     }
   }
 }
+```
+
+This saves you tones of boilerplate code. Let's see what you got for free here
+1. You can access your preferences by name not by key 
+2. Default values will be applied to every call if they are not null (You can do it anyway if you want)
+3. A converter powered by gson is automatically created for you (You can pass your own Gson instance in the create method)
+
+## License
+
+```
+Copyright 2017 Manuel Wrage
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+ 
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 ```
