@@ -6,9 +6,15 @@ import com.ivianuu.autorxpreferences.annotations.Preferences;
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-@Preferences
+@Preferences(preferenceName = "hahaha", expose = false)
 class SamplePreferences {
-    @Key protected String accessToken;
-    @Key protected Long tokenExpiresAt;
-    @Key protected UserData userData;
+    @Key String accessToken;
+    @Key Long tokenExpiresAt;
+    @Key UserData userData;
+    @Key UserData otherUserData;
+    @Key UserData anotherOtherUserData;
+    @Key Song currentSong;
+    @Key Album lastPlayedAlbum;
+    @Key Song nextSong;
+    @Key Song lastSong;
 }

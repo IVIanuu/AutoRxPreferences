@@ -43,6 +43,8 @@ class PreferencesSet {
     private String preferencesName;
     private List<Preference> preferences;
 
+    private List<ParameterizedTypeName> converters = new ArrayList<>();
+
     private PreferencesSet(TypeName targetTypeName,
                            ClassName preferenceClassName,
                            boolean expose,
@@ -72,11 +74,10 @@ class PreferencesSet {
         }
 
         // rx preferences field
-        result.addField(createGsonField());
         result.addField(createRxPreferencesField());
 
-        // constructor
-        result.addMethod(createConstructor());
+        // Base constructor
+        MethodSpec.Builder constructor = createBaseConstructor();
 
         // create methods
         result.addMethod(createContextOnlyCreateMethod());
@@ -97,12 +98,26 @@ class PreferencesSet {
                 result.addMethod(createEnumGetterWithDefaultMethod(preference));
             } else {
                 // custom object
-                result.addType(createPreferenceConverter(preference));
+
+                // maybe create a converter for this type
+                if (!converters.contains(getConverterType(preference))) {
+                    result.addType(createObjectConverter(preference));
+                    result.addField(createConverterField(preference));
+
+                    constructor.addStatement(
+                            "this." + getConverterFieldName(preference) + " = new " + getConverterTypeName(preference) + "(gson)");
+
+                    converters.add(getConverterType(preference));
+                }
+
                 result.addMethod(createObjectGetterMethod(preference));
                 result.addMethod(createObjectGetterWithDefaultMethod(preference));
                 result.addMethod(createObjectGetterWithAdapterAndDefaultMethod(preference));
             }
         }
+
+        // add constructor
+        result.addMethod(constructor.build());
 
         return result.build();
     }
@@ -113,13 +128,7 @@ class PreferencesSet {
                 .build();
     }
 
-    private FieldSpec createGsonField() {
-        return FieldSpec.builder(
-                ClassName.bestGuess(GSON_TYPE), "gson", Modifier.PRIVATE, Modifier.FINAL)
-                .build();
-    }
-
-    private MethodSpec createConstructor() {
+    private MethodSpec.Builder createBaseConstructor() {
         MethodSpec.Builder result = MethodSpec.constructorBuilder()
                 .addParameter(ClassName.bestGuess(CONTEXT_TYPE), "context")
                 .addParameter(ClassName.bestGuess(GSON_TYPE), "gson")
@@ -133,13 +142,13 @@ class PreferencesSet {
         } else {
             // use the preference name
             result.addStatement(
-                    SHARED_PREFERENCES_TYPE + " sharedPreferences = getSharedPreferences("
-                            + preferencesName + ", Context.MODE_PRIVATE)");
+                    SHARED_PREFERENCES_TYPE + " sharedPreferences = context.getSharedPreferences(\""
+                            + preferencesName + "\", Context.MODE_PRIVATE)");
         }
 
-        result.addStatement("this.gson = gson");
         result.addStatement("this.rxSharedPreferences = RxSharedPreferences.create(sharedPreferences)");
-        return result.build();
+
+        return result;
     }
 
     private MethodSpec createContextOnlyCreateMethod() {
@@ -149,7 +158,7 @@ class PreferencesSet {
 
         MethodSpec.Builder result = MethodSpec.methodBuilder("create").addModifiers(Modifier.STATIC)
                 .addParameter(contextParam)
-                .addStatement("return new " + preferenceClassName.simpleName() +"(context, new Gson())")
+                .addStatement("return create(context, new Gson())")
                 .returns(preferenceClassName);
 
         if (expose) {
@@ -292,8 +301,7 @@ class PreferencesSet {
                 .addStatement("throw new java.lang.IllegalStateException(\"" + exceptionText + "\")")
                 .endControlFlow();
 
-        result.addStatement("return " + preference.getName() + "(" + preference.getName() + ", new "
-                + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, preference.getName() + "Converter" + "(gson))"));
+        result.addStatement("return " + preference.getName() + "(" + preference.getName() + ")");
 
         return result.build();
     }
@@ -312,8 +320,7 @@ class PreferencesSet {
             result.addModifiers(Modifier.PUBLIC);
         }
 
-        result.addStatement("return " + preference.getName() + "(defaultValue, new "
-                + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, preference.getName() + "Converter" + "(gson))"));
+        result.addStatement("return " + preference.getName() + "(defaultValue, " + getConverterFieldName(preference) + ")");
 
         return result.build();
     }
@@ -343,8 +350,8 @@ class PreferencesSet {
         return result.build();
     }
 
-    private TypeSpec createPreferenceConverter(Preference preference) {
-        String className = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, preference.getName() + "Converter");
+    private TypeSpec createObjectConverter(Preference preference) {
+        String className = getConverterTypeName(preference);
         TypeName type;
 
         // get the raw type
@@ -390,6 +397,26 @@ class PreferencesSet {
         result.addMethod(serializeMethod);
 
         return result.build();
+    }
+
+    private FieldSpec createConverterField(Preference preference) {
+        ParameterizedTypeName converterType = getConverterType(preference);
+        String converterName = getConverterFieldName(preference);
+        return FieldSpec.builder(converterType, converterName, Modifier.PRIVATE, Modifier.FINAL)
+                .build();
+    }
+
+    private ParameterizedTypeName getConverterType(Preference preference) {
+        return ParameterizedTypeName.get(ClassName.bestGuess(RX_CONVERTER_TYPE), preference.getTypeName());
+    }
+
+    private String getConverterTypeName(Preference preference) {
+        return CaseFormat.LOWER_CAMEL.to(
+                CaseFormat.UPPER_CAMEL, ClassName.bestGuess(preference.getTypeName().toString()).simpleName() + "Converter");
+    }
+
+    private String getConverterFieldName(Preference preference) {
+        return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, getConverterTypeName(preference));
     }
 
     private String getGetterMethodPrefix(Preference preference) {
