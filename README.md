@@ -144,6 +144,35 @@ This saves you tones of boilerplate code. Let's see what you got for free here
 2. Default values will be applied to every call if they are not null (You can do it anyway if you want)
 3. A converter powered by gson is automatically created for you (You can pass your own Gson instance in the create method)
 
+## Annotations
+
+### `@Preferences`
+
+Creates a auto preference class
+
+| parameter | description | default vale |
+|---|---|---|
+| `preferenceName` | SharedPreferences name | empty (Uses default preferences) |
+| `classNameSuffix` | The suffix at the of the generated class | `_`
+| `expose` | whether to make generated classes public or not | true |
+
+
+### `@key`
+
+Declare annotated variable as SharedPreferences key.
+
+| parameter | description | default value |
+|---|---|---|
+| `name` | preference's key name | empty (variable name is converted to lower_snake_case and used as key) |
+
+## Credits
+
+yshrsmz: For the idea 
+https://github.com/yshrsmz/simple-preferences
+
+f2prateek: For the RxPreferences library
+https://github.com/f2prateek
+
 ## License
 
 ```
