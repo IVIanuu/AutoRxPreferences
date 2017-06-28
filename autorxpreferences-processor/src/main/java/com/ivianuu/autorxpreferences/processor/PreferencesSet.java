@@ -39,18 +39,18 @@ class PreferencesSet {
 
     private TypeName targetTypeName;
     private ClassName preferenceClassName;
-    private boolean isPublic;
+    private boolean expose;
     private String preferencesName;
     private List<Preference> preferences;
 
     private PreferencesSet(TypeName targetTypeName,
                            ClassName preferenceClassName,
-                           boolean isPublic,
+                           boolean expose,
                            String preferencesName,
                            List<Preference> preferences) {
         this.targetTypeName = targetTypeName;
         this.preferenceClassName = preferenceClassName;
-        this.isPublic = isPublic;
+        this.expose = expose;
         this.preferencesName = preferencesName;
         this.preferences = preferences;
     }
@@ -67,7 +67,7 @@ class PreferencesSet {
                 .superclass(targetTypeName);
 
         // add public
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -152,7 +152,7 @@ class PreferencesSet {
                 .addStatement("return new " + preferenceClassName.simpleName() +"(context, new Gson())")
                 .returns(preferenceClassName);
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -174,7 +174,7 @@ class PreferencesSet {
                 .addStatement("return new " + preferenceClassName.simpleName() +"(context, gson)")
                 .returns(preferenceClassName);
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -186,7 +186,7 @@ class PreferencesSet {
                 .addAnnotation(NonNull.class)
                 .addStatement("return rxSharedPreferences")
                 .returns(ClassName.bestGuess(RX_SHARED_PREFERENCES_TYPE));
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -198,7 +198,7 @@ class PreferencesSet {
                 .addAnnotation(NonNull.class)
                 .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -222,7 +222,7 @@ class PreferencesSet {
                 .addParameter(defaultValueParam)
                 .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -238,7 +238,7 @@ class PreferencesSet {
                 .returns(preference.getTypeName())
                 .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -266,7 +266,7 @@ class PreferencesSet {
                 .returns(preference.getTypeName())
                 .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -282,7 +282,7 @@ class PreferencesSet {
                 .addAnnotation(NonNull.class)
                 .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -308,7 +308,7 @@ class PreferencesSet {
                 .addParameter(defaultValueParam)
                 .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -334,7 +334,7 @@ class PreferencesSet {
                 .addParameter(converterParam)
                 .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
 
-        if (isPublic) {
+        if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
@@ -435,15 +435,14 @@ class PreferencesSet {
                 packageName.length() + 1).replace('.', '$');
         ClassName bindingClassName = ClassName.get(packageName, className + preferencesAnnotation.classNameSuffix());
 
-        boolean isPublic = enclosingElement.getModifiers().contains(Modifier.PUBLIC);
-        return new Builder(targetType, bindingClassName, isPublic, preferencesAnnotation.preferenceName());
+        return new Builder(targetType, bindingClassName, preferencesAnnotation.expose(), preferencesAnnotation.preferenceName());
     }
 
     static class Builder {
 
         private TypeName targetTypeName;
         private ClassName preferenceClassName;
-        private boolean isPublic;
+        private boolean expose;
 
         private String preferencesName;
 
@@ -451,11 +450,11 @@ class PreferencesSet {
 
         private Builder(TypeName targetTypeName,
                         ClassName preferenceClassName,
-                        boolean isPublic,
+                        boolean expose,
                         String preferencesName) {
             this.targetTypeName = targetTypeName;
             this.preferenceClassName = preferenceClassName;
-            this.isPublic = isPublic;
+            this.expose = expose;
             this.preferencesName = preferencesName;
         }
 
@@ -465,7 +464,7 @@ class PreferencesSet {
         }
 
         PreferencesSet build() {
-            return new PreferencesSet(targetTypeName, preferenceClassName, isPublic, preferencesName, preferences);
+            return new PreferencesSet(targetTypeName, preferenceClassName, expose, preferencesName, preferences);
         }
     }
 }

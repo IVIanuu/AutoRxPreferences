@@ -23,4 +23,11 @@ public @interface Preferences {
      * The generated classes name will be Preferences_
      */
     String classNameSuffix() default "_";
+
+    /**
+     * whether to make generated classes public or not
+     *
+     * true if generated class should be public. If false, the class will be package private.
+     */
+    boolean expose() default true;
 }
