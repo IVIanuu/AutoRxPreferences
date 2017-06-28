@@ -6,7 +6,7 @@ import com.ivianuu.autorxpreferences.annotations.Preferences;
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-@Preferences(preferenceName = "haha")
+@Preferences
 class SamplePreferences {
     @Key String accessToken;
     @Key Long tokenExpiresAt;
@@ -14,5 +14,5 @@ class SamplePreferences {
     @Key UserData otherUserData;
     @Key UserData anotherOtherUserData;
     @Key Song currentSong;
-
+    @Key Boolean isLoggedIn;
 }

@@ -3,6 +3,8 @@ package com.ivianuu.autorxpreferences.sample;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+import com.f2prateek.rx.preferences2.RxSharedPreferences;
+
 import io.reactivex.functions.Consumer;
 
 public class MainActivity extends AppCompatActivity {
@@ -15,5 +17,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         samplePreferences = SamplePreferences_.create(getApplicationContext());
+
     }
 }
