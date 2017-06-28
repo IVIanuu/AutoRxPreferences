@@ -33,7 +33,7 @@ dependencies {
 1. Create a class and annotate it with the @Preferences annotation.
 2. Create some fields and annotate them with the @Key annotation.
 
-The class should be look like this
+The class should look like this
 
 ```java
 @Preferences
