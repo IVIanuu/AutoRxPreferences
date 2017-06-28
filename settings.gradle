@@ -1,0 +1,1 @@
+include ':sample', ':autorxpreferences-annotations', ':autorxpreferences-processor', ':autorxpreferences'
