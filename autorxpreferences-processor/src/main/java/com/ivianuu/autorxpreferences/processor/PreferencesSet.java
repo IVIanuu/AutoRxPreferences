@@ -3,7 +3,6 @@ package com.ivianuu.autorxpreferences.processor;
 import android.support.annotation.NonNull;
 
 import com.google.common.base.CaseFormat;
-import com.google.gson.Gson;
 import com.ivianuu.autorxpreferences.annotations.Preferences;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
@@ -29,13 +28,14 @@ import static com.google.auto.common.MoreElements.getPackage;
  */
 class PreferencesSet {
 
-    private static final String CONTEXT_TYPE = "android.content.Context";
-    private static final String GSON_TYPE = "com.google.gson.Gson";
-    private static final String PREFERENCE_MANAGER_TYPE = "android.preference.PreferenceManager";
-    private static final String SHARED_PREFERENCES_TYPE = "android.content.SharedPreferences";
-    private static final String RX_SHARED_PREFERENCES_TYPE = "com.f2prateek.rx.preferences2.RxSharedPreferences";
-    private static final String RX_PREFERENCE_TYPE = "com.f2prateek.rx.preferences2.Preference";
-    private static final String RX_CONVERTER_TYPE = "com.f2prateek.rx.preferences2.Preference.Converter";
+    private static final ClassName CONTEXT = ClassName.bestGuess("android.content.Context");
+    private static final ClassName GSON = ClassName.bestGuess("com.google.gson.Gson");
+    private static final ClassName ILLEGAL_STATE_EXCEPTION = ClassName.bestGuess("java.lang.IllegalStateException");
+    private static final ClassName PREFERENCE_MANAGER = ClassName.bestGuess("android.preference.PreferenceManager");
+    private static final ClassName SHARED_PREFERENCES = ClassName.bestGuess("android.content.SharedPreferences");
+    private static final ClassName RX_SHARED_PREFERENCES = ClassName.bestGuess("com.f2prateek.rx.preferences2.RxSharedPreferences");
+    private static final ClassName RX_PREFERENCE = ClassName.bestGuess("com.f2prateek.rx.preferences2.Preference");
+    private static final ClassName RX_CONVERTER = ClassName.bestGuess("com.f2prateek.rx.preferences2.Preference.Converter");
 
     private TypeName targetTypeName;
     private ClassName preferenceClassName;
@@ -99,13 +99,13 @@ class PreferencesSet {
             } else {
                 // custom object
 
-                // maybe create a converter for this type
+                // if we have no converter for this type add it
                 if (!converters.contains(getConverterType(preference))) {
                     result.addType(createObjectConverter(preference));
                     result.addField(createConverterField(preference));
 
                     constructor.addStatement(
-                            "this." + getConverterFieldName(preference) + " = new " + getConverterTypeName(preference) + "(gson)");
+                            "this.$L = new $L(gson)", getConverterFieldName(preference), getConverterTypeName(preference));
 
                     converters.add(getConverterType(preference));
                 }
@@ -123,27 +123,24 @@ class PreferencesSet {
     }
 
     private FieldSpec createRxPreferencesField() {
-        return FieldSpec.builder(
-                ClassName.bestGuess(RX_SHARED_PREFERENCES_TYPE), "rxSharedPreferences", Modifier.PRIVATE, Modifier.FINAL)
+        return FieldSpec.builder(RX_SHARED_PREFERENCES, "rxSharedPreferences", Modifier.PRIVATE, Modifier.FINAL)
                 .build();
     }
 
     private MethodSpec.Builder createBaseConstructor() {
         MethodSpec.Builder result = MethodSpec.constructorBuilder()
-                .addParameter(ClassName.bestGuess(CONTEXT_TYPE), "context")
-                .addParameter(ClassName.bestGuess(GSON_TYPE), "gson")
+                .addParameter(CONTEXT, "context")
+                .addParameter(GSON, "gson")
                 .addModifiers(Modifier.PRIVATE);
 
         if (preferencesName.isEmpty()) {
             // use default
             result.addStatement(
-                    SHARED_PREFERENCES_TYPE + " sharedPreferences = "
-                            + PREFERENCE_MANAGER_TYPE + ".getDefaultSharedPreferences(context)");
+                    "$T sharedPreferences = $T.getDefaultSharedPreferences(context)", SHARED_PREFERENCES, PREFERENCE_MANAGER);
         } else {
             // use the preference name
             result.addStatement(
-                    SHARED_PREFERENCES_TYPE + " sharedPreferences = context.getSharedPreferences(\""
-                            + preferencesName + "\", Context.MODE_PRIVATE)");
+                    "$T sharedPreferences = context.getSharedPreferences($S, Context.MODE_PRIVATE)", SHARED_PREFERENCES, preferencesName);
         }
 
         result.addStatement("this.rxSharedPreferences = RxSharedPreferences.create(sharedPreferences)");
@@ -152,13 +149,13 @@ class PreferencesSet {
     }
 
     private MethodSpec createContextOnlyCreateMethod() {
-        ParameterSpec contextParam = ParameterSpec.builder(ClassName.bestGuess(CONTEXT_TYPE), "context")
+        ParameterSpec contextParam = ParameterSpec.builder(CONTEXT, "context")
                 .addAnnotation(NonNull.class)
                 .build();
 
         MethodSpec.Builder result = MethodSpec.methodBuilder("create").addModifiers(Modifier.STATIC)
                 .addParameter(contextParam)
-                .addStatement("return create(context, new Gson())")
+                .addStatement("return create(context, new $T())", GSON)
                 .returns(preferenceClassName);
 
         if (expose) {
@@ -169,18 +166,18 @@ class PreferencesSet {
     }
 
     private MethodSpec createContextAndGsonCreateMethod() {
-        ParameterSpec contextParam = ParameterSpec.builder(ClassName.bestGuess(CONTEXT_TYPE), "context")
+        ParameterSpec contextParam = ParameterSpec.builder(CONTEXT, "context")
                 .addAnnotation(NonNull.class)
                 .build();
 
-        ParameterSpec gsonParam = ParameterSpec.builder(ClassName.bestGuess(GSON_TYPE), "gson")
+        ParameterSpec gsonParam = ParameterSpec.builder(GSON, "gson")
                 .addAnnotation(NonNull.class)
                 .build();
 
         MethodSpec.Builder result = MethodSpec.methodBuilder("create").addModifiers(Modifier.STATIC)
                 .addParameter(contextParam)
                 .addParameter(gsonParam)
-                .addStatement("return new " + preferenceClassName.simpleName() +"(context, gson)")
+                .addStatement("return new $T(context, gson)", preferenceClassName)
                 .returns(preferenceClassName);
 
         if (expose) {
@@ -194,7 +191,7 @@ class PreferencesSet {
         MethodSpec.Builder result = MethodSpec.methodBuilder("getRxSharedPreferences")
                 .addAnnotation(NonNull.class)
                 .addStatement("return rxSharedPreferences")
-                .returns(ClassName.bestGuess(RX_SHARED_PREFERENCES_TYPE));
+                .returns(RX_SHARED_PREFERENCES);
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
@@ -203,19 +200,20 @@ class PreferencesSet {
     }
 
     private MethodSpec createPreferenceGetterMethod(Preference preference) {
-        MethodSpec.Builder result = MethodSpec.methodBuilder(preference.getName())
+        String name = preference.getName();
+
+        MethodSpec.Builder result = MethodSpec.methodBuilder(name)
                 .addAnnotation(NonNull.class)
-                .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
+                .returns(getRxPreferenceType(preference));
 
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
-        result.beginControlFlow("if (" + preference.getName() + " != null)")
-                .addStatement("return " + preference.getName() + "(" + preference.getName() + ")")
+        result.beginControlFlow("if ($L != null)", name)
+                .addStatement("return $L($L)", name, name)
                 .nextControlFlow("else")
-                .addStatement("return rxSharedPreferences."
-                        + getGetterMethodPrefix(preference) + "(\"" + preference.getKeyName() + "\")")
+                .addStatement("return rxSharedPreferences.$L($S)", getGetterMethodPrefix(preference), name)
                 .endControlFlow();
 
         return result.build();
@@ -229,14 +227,14 @@ class PreferencesSet {
         MethodSpec.Builder result = MethodSpec.methodBuilder(preference.getName())
                 .addAnnotation(NonNull.class)
                 .addParameter(defaultValueParam)
-                .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
+                .returns(getRxPreferenceType(preference));
 
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
-        result.addStatement("return rxSharedPreferences." + getGetterMethodPrefix(preference)
-                + "(\"" + preference.getKeyName() + "\", defaultValue)");
+        result.addStatement(
+                "return rxSharedPreferences.$L($S, defaultValue)", getGetterMethodPrefix(preference), preference.getKeyName());
 
         return result.build();
     }
@@ -245,7 +243,7 @@ class PreferencesSet {
         MethodSpec.Builder result = MethodSpec.methodBuilder(preference.getName())
                 .addAnnotation(NonNull.class)
                 .returns(preference.getTypeName())
-                .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
+                .returns(getRxPreferenceType(preference));
 
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
@@ -253,13 +251,12 @@ class PreferencesSet {
 
         String exceptionText = preference.getName() + " has no default value";
 
-        result.beginControlFlow("if(" + preference.getName() + " == null)")
-                .addStatement("throw new java.lang.IllegalStateException(\"" + exceptionText + "\")")
+        result.beginControlFlow("if $L == null)", preference.getName())
+                .addStatement("throw new $T($S)", ILLEGAL_STATE_EXCEPTION, exceptionText)
                 .endControlFlow();
 
         result.addStatement(
-                "return rxSharedPreferences.getEnum(\""
-                        + preference.getKeyName() + "\", " + preference.getName() + ", " + preference.getTypeName() + ".class)");
+                "return $L($L)", preference.getName());
 
         return result.build();
     }
@@ -273,15 +270,15 @@ class PreferencesSet {
                 .addAnnotation(NonNull.class)
                 .addParameter(defaultValueParam)
                 .returns(preference.getTypeName())
-                .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
+                .returns(getRxPreferenceType(preference));
 
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
         result.addStatement(
-                "return rxSharedPreferences.getEnum(\""
-                        + preference.getKeyName() + "\", defaultValue, " + preference.getTypeName() + ".class)");
+                "return rxSharedPreferences.getEnum($S, defaultValue, $T.class)", preference.getKeyName(), preference.getTypeName());
+
 
         return result.build();
     }
@@ -289,19 +286,20 @@ class PreferencesSet {
     private MethodSpec createObjectGetterMethod(Preference preference) {
         MethodSpec.Builder result = MethodSpec.methodBuilder(preference.getName())
                 .addAnnotation(NonNull.class)
-                .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
+                .returns(getRxPreferenceType(preference));
 
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
-        String exceptionText = preference.getName() + " has no default value";
+        String name = preference.getName();
+        String exceptionText = name + " has no default value";
 
-        result.beginControlFlow("if(" + preference.getName() + " == null)")
-                .addStatement("throw new java.lang.IllegalStateException(\"" + exceptionText + "\")")
+        result.beginControlFlow("if($L == null)", name)
+                .addStatement("throw new $T($S)", ILLEGAL_STATE_EXCEPTION, exceptionText)
                 .endControlFlow();
 
-        result.addStatement("return " + preference.getName() + "(" + preference.getName() + ")");
+        result.addStatement("return $L($L)", name, name);
 
         return result.build();
     }
@@ -314,13 +312,13 @@ class PreferencesSet {
         MethodSpec.Builder result = MethodSpec.methodBuilder(preference.getName())
                 .addAnnotation(NonNull.class)
                 .addParameter(defaultValueParam)
-                .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
+                .returns(getRxPreferenceType(preference));
 
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
-        result.addStatement("return " + preference.getName() + "(defaultValue, " + getConverterFieldName(preference) + ")");
+        result.addStatement("return $L(defaultValue, $L)", preference.getName(), getConverterFieldName(preference));
 
         return result.build();
     }
@@ -331,7 +329,7 @@ class PreferencesSet {
                 .build();
 
         ParameterSpec converterParam = ParameterSpec.builder(ParameterizedTypeName.get(
-                ClassName.bestGuess(RX_CONVERTER_TYPE), preference.getTypeName()), "converter")
+                RX_CONVERTER, preference.getTypeName()), "converter")
                 .addAnnotation(NonNull.class)
                 .build();
 
@@ -339,13 +337,13 @@ class PreferencesSet {
                 .addAnnotation(NonNull.class)
                 .addParameter(defaultValueParam)
                 .addParameter(converterParam)
-                .returns(ParameterizedTypeName.get(ClassName.bestGuess(RX_PREFERENCE_TYPE), preference.getTypeName()));
+                .returns(getRxPreferenceType(preference));
 
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }
 
-        result.addStatement("return rxSharedPreferences.getObject(\"" + preference.getKeyName() + "\", defaultValue, converter)");
+        result.addStatement("return rxSharedPreferences.getObject($S, defaultValue, converter)", preference.getKeyName());
 
         return result.build();
     }
@@ -363,12 +361,12 @@ class PreferencesSet {
 
         TypeSpec.Builder result = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                .addSuperinterface(ParameterizedTypeName.get(ClassName.bestGuess(RX_CONVERTER_TYPE), preference.getTypeName()))
-                .addField(ClassName.bestGuess(GSON_TYPE), "gson", Modifier.PRIVATE, Modifier.FINAL);
+                .addSuperinterface(getConverterType(preference))
+                .addField(GSON, "gson", Modifier.PRIVATE, Modifier.FINAL);
 
         MethodSpec constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
-                .addParameter(ClassName.bestGuess(GSON_TYPE), "gson")
+                .addParameter(GSON, "gson")
                 .addStatement("this.gson = gson")
                 .build();
 
@@ -379,7 +377,7 @@ class PreferencesSet {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(ClassName.get(String.class), "serialized")
-                .addStatement("return gson.fromJson(serialized, " + type.toString() + ".class)")
+                .addStatement("return gson.fromJson(serialized, $T.class)", type)
                 .returns(preference.getTypeName())
                 .build();
 
@@ -406,8 +404,12 @@ class PreferencesSet {
                 .build();
     }
 
+    private ParameterizedTypeName getRxPreferenceType(Preference preference) {
+        return ParameterizedTypeName.get(RX_PREFERENCE, preference.getTypeName());
+    }
+
     private ParameterizedTypeName getConverterType(Preference preference) {
-        return ParameterizedTypeName.get(ClassName.bestGuess(RX_CONVERTER_TYPE), preference.getTypeName());
+        return ParameterizedTypeName.get(RX_CONVERTER, preference.getTypeName());
     }
 
     private String getConverterTypeName(Preference preference) {
