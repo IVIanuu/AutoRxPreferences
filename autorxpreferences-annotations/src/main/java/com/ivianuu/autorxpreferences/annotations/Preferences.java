@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 public @interface Preferences {
     /**
      * preferences name.
-     * if empty, default SharedPreferences is picked.
+     * if empty, default SharedPreferences will be used.
      */
     String preferenceName() default "";
 
