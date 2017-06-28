@@ -153,7 +153,7 @@ Creates a auto preference class
 | parameter | description | default vale |
 |---|---|---|
 | `preferenceName` | SharedPreferences name | empty (Uses default preferences) |
-| `classNameSuffix` | The suffix at the of the generated class | `_`
+| `classNameSuffix` | The suffix at the of the generated class | _
 | `expose` | whether to make generated classes public or not | true |
 
 
