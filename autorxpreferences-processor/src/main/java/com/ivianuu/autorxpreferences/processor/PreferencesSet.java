@@ -102,9 +102,6 @@ class PreferencesSet {
         result.addMethod(createContextOnlyCreateMethod());
         result.addMethod(createContextAndGsonCreateMethod());
 
-        // prefs getter
-        result.addMethod(createGetRxSharedPreferencesMethod());
-
         // clear method
         result.addMethod(createClearMethod());
 
@@ -207,18 +204,6 @@ class PreferencesSet {
                 .addStatement("return new $T(context, gson)", preferenceClassName)
                 .returns(preferenceClassName);
 
-        if (expose) {
-            result.addModifiers(Modifier.PUBLIC);
-        }
-
-        return result.build();
-    }
-
-    private MethodSpec createGetRxSharedPreferencesMethod() {
-        MethodSpec.Builder result = MethodSpec.methodBuilder("getRxSharedPreferences")
-                .addAnnotation(NonNull.class)
-                .addStatement("return rxSharedPreferences")
-                .returns(RX_SHARED_PREFERENCES);
         if (expose) {
             result.addModifiers(Modifier.PUBLIC);
         }

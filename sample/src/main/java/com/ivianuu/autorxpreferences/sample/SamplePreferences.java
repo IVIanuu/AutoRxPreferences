@@ -1,5 +1,9 @@
 package com.ivianuu.autorxpreferences.sample;
 
+import android.database.sqlite.SQLiteOpenHelper;
+import android.support.v4.app.Fragment;
+import android.view.View;
+
 import com.ivianuu.autorxpreferences.annotations.Key;
 import com.ivianuu.autorxpreferences.annotations.Preferences;
 
@@ -12,6 +16,5 @@ class SamplePreferences {
     @Key Long tokenExpiresAt;
     @Key UserData userData;
     @Key UserData otherUserData;
-    @Key Song currentSong;
-    @Key Boolean isLoggedIn;
+    @Key Boolean loggedIn;
 }

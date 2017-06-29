@@ -2,6 +2,7 @@ package com.ivianuu.autorxpreferences.sample;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 
 import com.f2prateek.rx.preferences2.RxSharedPreferences;
@@ -20,6 +21,5 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         samplePreferences = SamplePreferences_.create(this);
-
     }
 }
