@@ -101,6 +101,10 @@ public class AutoRxPreferencesProcessor extends AbstractProcessor {
 
         for (Element element : roundEnvironment.getElementsAnnotatedWith(Preferences.class)) {
             TypeElement typeElement = (TypeElement) element;
+
+            if (typeElement.getModifiers().contains(Modifier.PRIVATE)) {
+                error(typeElement, "%s cannot be private", typeElement.getSimpleName().toString());
+            }
             if (typeElement.getModifiers().contains(Modifier.FINAL)) {
                 error(typeElement, "%s cannot be final", typeElement.getSimpleName().toString());
             }

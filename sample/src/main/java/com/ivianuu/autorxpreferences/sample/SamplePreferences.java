@@ -12,7 +12,6 @@ class SamplePreferences {
     @Key Long tokenExpiresAt;
     @Key UserData userData;
     @Key UserData otherUserData;
-    @Key UserData anotherOtherUserData;
     @Key Song currentSong;
     @Key Boolean isLoggedIn;
 }
