@@ -23,7 +23,7 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeName;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +36,7 @@ import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -48,7 +49,7 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
 @AutoService(Processor.class)
-public class AutoRxPreferencesProcessor extends AbstractProcessor {
+public final class AutoRxPreferencesProcessor extends AbstractProcessor {
 
     private Filer filer;
     private Messager messager;
@@ -97,9 +98,13 @@ public class AutoRxPreferencesProcessor extends AbstractProcessor {
     }
 
     private Map<TypeElement, PreferencesSet> findAndParseTargets(RoundEnvironment roundEnvironment) {
-        Map<TypeElement, PreferencesSet> preferencesSetMap = new HashMap<>();
+        Map<TypeElement, PreferencesSet> preferencesSetMap = new LinkedHashMap<>();
 
         for (Element element : roundEnvironment.getElementsAnnotatedWith(Preferences.class)) {
+            if (element.getKind() != ElementKind.CLASS) {
+                error(element, "%s is no class", element.getSimpleName().toString());
+            }
+
             TypeElement typeElement = (TypeElement) element;
 
             if (typeElement.getModifiers().contains(Modifier.PRIVATE)) {
@@ -108,6 +113,9 @@ public class AutoRxPreferencesProcessor extends AbstractProcessor {
             if (typeElement.getModifiers().contains(Modifier.FINAL)) {
                 error(typeElement, "%s cannot be final", typeElement.getSimpleName().toString());
             }
+            if (typeElement.getModifiers().contains(Modifier.ABSTRACT)) {
+                error(typeElement, "%s cannot be abstract", typeElement.getSimpleName().toString());
+            }
 
             PreferencesSet.Builder preferenceSetBuilder = PreferencesSet.newBuilder(typeElement);
 
@@ -115,6 +123,10 @@ public class AutoRxPreferencesProcessor extends AbstractProcessor {
             for (Element field : ElementFilter.fieldsIn(typeElement.getEnclosedElements())) {
                 // not annotated
                 if (field.getAnnotation(Key.class) == null) continue;
+
+                if (field.getKind() != ElementKind.FIELD) {
+                    error(element, "%s is no field", field.getSimpleName().toString());
+                }
 
                 VariableElement variableElement = (VariableElement) field;
 
@@ -132,7 +144,6 @@ public class AutoRxPreferencesProcessor extends AbstractProcessor {
 
                 // add and create preference
                 Preference preference = Preference.create(variableElement, isEnum(variableElement));
-
                 preferenceSetBuilder.addPreference(preference);
             }
 

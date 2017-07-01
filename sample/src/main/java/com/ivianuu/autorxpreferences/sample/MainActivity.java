@@ -1,15 +1,7 @@
 package com.ivianuu.autorxpreferences.sample;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
-
-import com.f2prateek.rx.preferences2.RxSharedPreferences;
-import com.ivianuu.autorxpreferences.annotations.Key;
-import com.ivianuu.autorxpreferences.annotations.Preferences;
-
-import io.reactivex.functions.Consumer;
 
 public class MainActivity extends AppCompatActivity {
 

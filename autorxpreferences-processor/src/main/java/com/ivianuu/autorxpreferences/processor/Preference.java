@@ -25,7 +25,7 @@ import javax.lang.model.element.VariableElement;
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class Preference {
+final class Preference {
     
     private String fieldName;
     private TypeName typeName;

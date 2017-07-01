@@ -19,6 +19,7 @@ package com.ivianuu.autorxpreferences.processor;
 import android.support.annotation.NonNull;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.ImmutableList;
 import com.ivianuu.autorxpreferences.annotations.Preferences;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
@@ -42,7 +43,7 @@ import static com.google.auto.common.MoreElements.getPackage;
 /**
  * @author Manuel Wrage (IVIanuu)
  */
-class PreferencesSet {
+final class PreferencesSet {
 
     private static final ClassName CONTEXT = ClassName.get("android.content", "Context");
     private static final ClassName GSON = ClassName.get("com.google.gson", "Gson");
@@ -50,14 +51,14 @@ class PreferencesSet {
     private static final ClassName PREFERENCE_MANAGER = ClassName.get("android.preference", "PreferenceManager");
     private static final ClassName SHARED_PREFERENCES = ClassName.get("android.content", "SharedPreferences");
     private static final ClassName RX_SHARED_PREFERENCES = ClassName.get("com.f2prateek.rx.preferences2", "RxSharedPreferences");
-    private static final ClassName RX_PREFERENCE = ClassName.get("com.f2prateek.rx.preferences2", "Preference");
-    private static final ClassName RX_CONVERTER = ClassName.get("com.f2prateek.rx.preferences2.Preference", "Converter");
+    private static final ClassName PREFERENCE = ClassName.get("com.f2prateek.rx.preferences2", "Preference");
+    private static final ClassName CONVERTER = ClassName.get("com.f2prateek.rx.preferences2.Preference", "Converter");
 
     private TypeName targetTypeName;
     private ClassName preferenceClassName;
     private boolean expose;
     private String preferencesName;
-    private List<Preference> preferences;
+    private ImmutableList<Preference> preferences;
 
     private List<ParameterizedTypeName> converters = new ArrayList<>();
 
@@ -65,7 +66,8 @@ class PreferencesSet {
                            ClassName preferenceClassName,
                            boolean expose,
                            String preferencesName,
-                           List<Preference> preferences) {
+                           ImmutableList<Preference> preferences) {
+
         this.targetTypeName = targetTypeName;
         this.preferenceClassName = preferenceClassName;
         this.expose = expose;
@@ -110,11 +112,9 @@ class PreferencesSet {
             if (isSharedPreferencesSupportedType(preference)) {
                 // default preference methods
                 result.addMethod(createPreferenceGetterMethod(preference));
-                result.addMethod(createPreferenceGetterWithDefaultMethod(preference));
             } else if (preference.isEnum()) {
                 // enum method
                 result.addMethod(createEnumGetterMethod(preference));
-                result.addMethod(createEnumGetterWithDefaultMethod(preference));
             } else {
                 // custom object
 
@@ -130,8 +130,6 @@ class PreferencesSet {
                 }
 
                 result.addMethod(createObjectGetterMethod(preference));
-                result.addMethod(createObjectGetterWithDefaultMethod(preference));
-                result.addMethod(createObjectGetterWithAdapterAndDefaultMethod(preference));
             }
         }
 
@@ -233,30 +231,10 @@ class PreferencesSet {
         }
 
         result.beginControlFlow("if ($L != null)", name)
-                .addStatement("return $L($L)", getGetterMethodName(preference), name)
+                .addStatement("return rxSharedPreferences.$L($S, $L)", getGetterMethodPrefix(preference), preference.getKeyName(), name)
                 .nextControlFlow("else")
                 .addStatement("return rxSharedPreferences.$L($S)", getGetterMethodPrefix(preference), preference.getKeyName())
                 .endControlFlow();
-
-        return result.build();
-    }
-
-    private MethodSpec createPreferenceGetterWithDefaultMethod(Preference preference) {
-        ParameterSpec defaultValueParam = ParameterSpec.builder(preference.getTypeName(), "defaultValue")
-                .addAnnotation(NonNull.class)
-                .build();
-
-        MethodSpec.Builder result = MethodSpec.methodBuilder(getGetterMethodName(preference))
-                .addAnnotation(NonNull.class)
-                .addParameter(defaultValueParam)
-                .returns(getRxPreferenceType(preference));
-
-        if (expose) {
-            result.addModifiers(Modifier.PUBLIC);
-        }
-
-        result.addStatement(
-                "return rxSharedPreferences.$L($S, defaultValue)", getGetterMethodPrefix(preference), preference.getKeyName());
 
         return result.build();
     }
@@ -273,34 +251,12 @@ class PreferencesSet {
 
         String exceptionText = preference.getName() + " has no default value";
 
-        result.beginControlFlow("if $L == null)", preference.getName())
+        result.beginControlFlow("if ($L == null)", preference.getName())
                 .addStatement("throw new $T($S)", ILLEGAL_STATE_EXCEPTION, exceptionText)
                 .endControlFlow();
 
         result.addStatement(
-                "return $L($L)", getGetterMethodName(preference), preference.getName());
-
-        return result.build();
-    }
-
-    private MethodSpec createEnumGetterWithDefaultMethod(Preference preference) {
-        ParameterSpec defaultValueParam = ParameterSpec.builder(preference.getTypeName(), "defaultValue")
-                .addAnnotation(NonNull.class)
-                .build();
-
-        MethodSpec.Builder result = MethodSpec.methodBuilder(getGetterMethodName(preference))
-                .addAnnotation(NonNull.class)
-                .addParameter(defaultValueParam)
-                .returns(preference.getTypeName())
-                .returns(getRxPreferenceType(preference));
-
-        if (expose) {
-            result.addModifiers(Modifier.PUBLIC);
-        }
-
-        result.addStatement(
-                "return rxSharedPreferences.getEnum($S, defaultValue, $T.class)", preference.getKeyName(), preference.getTypeName());
-
+                "return rxSharedPreferences.getEnum($S, $L, $T.class)", preference.getKeyName(), preference.getName(), preference.getTypeName());
 
         return result.build();
     }
@@ -321,51 +277,7 @@ class PreferencesSet {
                 .addStatement("throw new $T($S)", ILLEGAL_STATE_EXCEPTION, exceptionText)
                 .endControlFlow();
 
-        result.addStatement("return $L($L)", getGetterMethodName(preference), name);
-
-        return result.build();
-    }
-
-    private MethodSpec createObjectGetterWithDefaultMethod(Preference preference) {
-        ParameterSpec defaultValueParam = ParameterSpec.builder(preference.getTypeName(), "defaultValue")
-                .addAnnotation(NonNull.class)
-                .build();
-
-        MethodSpec.Builder result = MethodSpec.methodBuilder(getGetterMethodName(preference))
-                .addAnnotation(NonNull.class)
-                .addParameter(defaultValueParam)
-                .returns(getRxPreferenceType(preference));
-
-        if (expose) {
-            result.addModifiers(Modifier.PUBLIC);
-        }
-
-        result.addStatement("return $L(defaultValue, $L)", getGetterMethodName(preference), getConverterFieldName(preference));
-
-        return result.build();
-    }
-
-    private MethodSpec createObjectGetterWithAdapterAndDefaultMethod(Preference preference) {
-        ParameterSpec defaultValueParam = ParameterSpec.builder(preference.getTypeName(), "defaultValue")
-                .addAnnotation(NonNull.class)
-                .build();
-
-        ParameterSpec converterParam = ParameterSpec.builder(ParameterizedTypeName.get(
-                RX_CONVERTER, preference.getTypeName()), "converter")
-                .addAnnotation(NonNull.class)
-                .build();
-
-        MethodSpec.Builder result = MethodSpec.methodBuilder(getGetterMethodName(preference))
-                .addAnnotation(NonNull.class)
-                .addParameter(defaultValueParam)
-                .addParameter(converterParam)
-                .returns(getRxPreferenceType(preference));
-
-        if (expose) {
-            result.addModifiers(Modifier.PUBLIC);
-        }
-
-        result.addStatement("return rxSharedPreferences.getObject($S, defaultValue, converter)", preference.getKeyName());
+        result.addStatement("return rxSharedPreferences.getObject($S, $L, $L)", preference.getKeyName(), preference.getName(), getConverterFieldName(preference));
 
         return result.build();
     }
@@ -427,11 +339,11 @@ class PreferencesSet {
     }
 
     private ParameterizedTypeName getRxPreferenceType(Preference preference) {
-        return ParameterizedTypeName.get(RX_PREFERENCE, preference.getTypeName());
+        return ParameterizedTypeName.get(PREFERENCE, preference.getTypeName());
     }
 
     private ParameterizedTypeName getConverterType(Preference preference) {
-        return ParameterizedTypeName.get(RX_CONVERTER, preference.getTypeName());
+        return ParameterizedTypeName.get(CONVERTER, preference.getTypeName());
     }
 
     private String getConverterTypeName(Preference preference) {
@@ -495,7 +407,7 @@ class PreferencesSet {
         return new Builder(targetType, bindingClassName, preferencesAnnotation.expose(), preferencesAnnotation.preferenceName());
     }
 
-    static class Builder {
+    static final class Builder {
 
         private TypeName targetTypeName;
         private ClassName preferenceClassName;
@@ -521,7 +433,8 @@ class PreferencesSet {
         }
 
         PreferencesSet build() {
-            return new PreferencesSet(targetTypeName, preferenceClassName, expose, preferencesName, preferences);
+            return new PreferencesSet(
+                    targetTypeName, preferenceClassName, expose, preferencesName, ImmutableList.copyOf(preferences));
         }
     }
 }
