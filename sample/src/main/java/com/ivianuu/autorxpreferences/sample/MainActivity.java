@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 
 import com.f2prateek.rx.preferences2.Preference;
 import com.f2prateek.rx.preferences2.RxSharedPreferences;
+import com.google.gson.Gson;
 
 import java.util.List;
 

@@ -589,7 +589,7 @@ final class PreferencesSet {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(ClassName.get(String.class), "serialized")
-                .addStatement("return gson.fromJson(serialized, $T.class)", type)
+                .addStatement("return gson.fromJson(serialized, type)")
                 .returns(preference.getTypeName())
                 .build();
 
@@ -600,7 +600,7 @@ final class PreferencesSet {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(preference.getTypeName(), "value")
-                .addStatement("return gson.toJson(value)")
+                .addStatement("return gson.toJson(value, type)")
                 .returns(String.class)
                 .build();
 
