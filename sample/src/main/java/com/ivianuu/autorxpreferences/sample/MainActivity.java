@@ -2,9 +2,13 @@ package com.ivianuu.autorxpreferences.sample;
 
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 
+import com.f2prateek.rx.preferences2.Preference;
 import com.f2prateek.rx.preferences2.RxSharedPreferences;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
