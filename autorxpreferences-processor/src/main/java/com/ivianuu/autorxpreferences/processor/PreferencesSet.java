@@ -63,6 +63,8 @@ final class PreferencesSet {
     private static final ClassName RX_SHARED_PREFERENCES = ClassName.get("com.f2prateek.rx.preferences2", "RxSharedPreferences");
     private static final ClassName PREFERENCE = ClassName.get("com.f2prateek.rx.preferences2", "Preference");
     private static final ClassName CONVERTER = ClassName.get("com.f2prateek.rx.preferences2.Preference", "Converter");
+    private static final ClassName TYPE = ClassName.get("java.lang.reflect", "Type");
+    private static final ClassName TYPE_TOKEN = ClassName.get("com.google.gson.reflect", "TypeToken");
 
     private TypeName targetTypeName;
     private ClassName preferenceClassName;
@@ -570,12 +572,14 @@ final class PreferencesSet {
         TypeSpec.Builder result = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
                 .addSuperinterface(getConverterType(preference))
-                .addField(GSON, "gson", Modifier.PRIVATE, Modifier.FINAL);
+                .addField(GSON, "gson", Modifier.PRIVATE, Modifier.FINAL)
+                .addField(TYPE, "type");
 
         MethodSpec constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE)
                 .addParameter(GSON, "gson")
                 .addStatement("this.gson = gson")
+                .addStatement("this.type = new $T<$L>() {}.getType()", TYPE_TOKEN, preference.getTypeName().toString())
                 .build();
 
         result.addMethod(constructor);
