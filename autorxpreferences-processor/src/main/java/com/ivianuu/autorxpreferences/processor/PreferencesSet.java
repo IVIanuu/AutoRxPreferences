@@ -466,7 +466,7 @@ final class PreferencesSet {
         }
 
         result.beginControlFlow("if (defaultValue != null)")
-                .addStatement("return getStringSet(key, defaultValue)")
+                .addStatement("return rxSharedPreferences.getStringSet(key, defaultValue)")
                 .nextControlFlow("else")
                 .addStatement("return rxSharedPreferences.getStringSet(key)")
                 .endControlFlow();
