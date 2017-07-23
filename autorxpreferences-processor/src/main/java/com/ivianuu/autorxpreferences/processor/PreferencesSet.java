@@ -29,6 +29,7 @@ import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,15 @@ import static com.google.auto.common.MoreElements.getPackage;
  * @author Manuel Wrage (IVIanuu)
  */
 final class PreferencesSet {
+
+    private static final ClassName BOOLEAN = ClassName.get("java.lang", "Boolean");
+    private static final ClassName CLASS = ClassName.get("java.lang", "Class");
+    private static final ClassName FLOAT = ClassName.get("java.lang", "Float");
+    private static final ClassName ENUM = ClassName.get("java.lang", "Enum");
+    private static final ClassName INTEGER = ClassName.get("java.lang", "Integer");
+    private static final ClassName LONG = ClassName.get("java.lang", "Long");
+    private static final ClassName SET = ClassName.get("java.util", "Set");
+    private static final ClassName STRING = ClassName.get("java.lang", "String");
 
     private static final ClassName CONTEXT = ClassName.get("android.content", "Context");
     private static final ClassName GSON = ClassName.get("com.google.gson", "Gson");
@@ -106,6 +116,22 @@ final class PreferencesSet {
 
         // clear method
         result.addMethod(createClearMethod());
+
+        // getter method wrappers
+        result.addMethod(createBooleanGetterMethod());
+        result.addMethod(createBooleanWithDefaultGetterMethod());
+        result.addMethod(createEnumGetterMethod());
+        result.addMethod(createFloatGetterMethod());
+        result.addMethod(createFloatWithDefaultGetterMethod());
+        result.addMethod(createIntegerGetterMethod());
+        result.addMethod(createIntegerWithDefaultGetterMethod());
+        result.addMethod(createLongGetterMethod());
+        result.addMethod(createLongWithDefaultGetterMethod());
+        result.addMethod(createObjectGetterMethod());
+        result.addMethod(createStringGetterMethod());
+        result.addMethod(createStringWithDefaultGetterMethod());
+        result.addMethod(createStringSetGetterMethod());
+        result.addMethod(createStringSetWithDefaultGetterMethod());
 
         // add methods for preferences
         for (Preference preference : preferences) {
@@ -219,6 +245,254 @@ final class PreferencesSet {
         return result.build();
     }
 
+    private MethodSpec createBooleanGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getBoolean")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .returns(getRxPreferenceType(BOOLEAN));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return getBoolean(key, null)");
+
+        return result.build();
+    }
+
+    private MethodSpec createBooleanWithDefaultGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getBoolean")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .addParameter(BOOLEAN, "defaultValue")
+                .returns(getRxPreferenceType(BOOLEAN));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.beginControlFlow("if (defaultValue != null)")
+                .addStatement("return rxSharedPreferences.getBoolean(key, defaultValue)")
+                .nextControlFlow("else")
+                .addStatement("return rxSharedPreferences.getBoolean(key)")
+                .endControlFlow();
+
+        return result.build();
+    }
+
+    private MethodSpec createEnumGetterMethod() {
+        TypeVariableName typeVariable = TypeVariableName.get("T", ENUM);
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getEnum")
+                .addAnnotation(NonNull.class)
+                .addTypeVariable(typeVariable)
+                .addParameter(STRING, "key")
+                .addParameter(typeVariable, "defaultValue")
+                .addParameter(ParameterizedTypeName.get(CLASS, typeVariable), "enumClass")
+                .returns(getRxPreferenceType(typeVariable));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return rxSharedPreferences.getEnum(key, defaultValue, enumClass)");
+
+        return result.build();
+    }
+
+    private MethodSpec createFloatGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getFloat")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .returns(getRxPreferenceType(FLOAT));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return getFloat(key, null)");
+
+        return result.build();
+    }
+
+    private MethodSpec createFloatWithDefaultGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getFloat")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .addParameter(FLOAT, "defaultValue")
+                .returns(getRxPreferenceType(FLOAT));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.beginControlFlow("if (defaultValue != null)")
+                .addStatement("return rxSharedPreferences.getFloat(key, defaultValue)")
+                .nextControlFlow("else")
+                .addStatement("return rxSharedPreferences.getFloat(key)")
+                .endControlFlow();
+
+        return result.build();
+    }
+
+    private MethodSpec createIntegerGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getInteger")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .returns(getRxPreferenceType(INTEGER));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return getInteger(key, null)");
+
+        return result.build();
+    }
+
+    private MethodSpec createIntegerWithDefaultGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getInteger")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .addParameter(INTEGER, "defaultValue")
+                .returns(getRxPreferenceType(INTEGER));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.beginControlFlow("if (defaultValue != null)")
+                .addStatement("return rxSharedPreferences.getInteger(key, defaultValue)")
+                .nextControlFlow("else")
+                .addStatement("return rxSharedPreferences.getInteger(key)")
+                .endControlFlow();
+
+        return result.build();
+    }
+
+    private MethodSpec createLongGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getLong")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .returns(getRxPreferenceType(LONG));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return getLong(key, null)");
+
+        return result.build();
+    }
+
+    private MethodSpec createLongWithDefaultGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getLong")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .addParameter(LONG, "defaultValue")
+                .returns(getRxPreferenceType(LONG));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.beginControlFlow("if (defaultValue != null)")
+                .addStatement("return rxSharedPreferences.getLong(key, defaultValue)")
+                .nextControlFlow("else")
+                .addStatement("return rxSharedPreferences.getLong(key)")
+                .endControlFlow();
+
+        return result.build();
+    }
+
+    private MethodSpec createStringGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getString")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .returns(getRxPreferenceType(STRING));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return getString(key, null)");
+
+        return result.build();
+    }
+
+    private MethodSpec createStringWithDefaultGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getString")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .addParameter(STRING, "defaultValue")
+                .returns(getRxPreferenceType(STRING));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.beginControlFlow("if (defaultValue != null)")
+                .addStatement("return rxSharedPreferences.getString(key, defaultValue)")
+                .nextControlFlow("else")
+                .addStatement("return rxSharedPreferences.getString(key)")
+                .endControlFlow();
+
+        return result.build();
+    }
+
+    private MethodSpec createStringSetGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getStringSet")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .returns(getRxPreferenceType(ParameterizedTypeName.get(SET, STRING)));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return getStringSet(key, null)");
+
+        return result.build();
+    }
+
+    private MethodSpec createStringSetWithDefaultGetterMethod() {
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getStringSet")
+                .addAnnotation(NonNull.class)
+                .addParameter(STRING, "key")
+                .addParameter(ParameterizedTypeName.get(SET, STRING), "defaultValue")
+                .returns(getRxPreferenceType(ParameterizedTypeName.get(SET, STRING)));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.beginControlFlow("if (defaultValue != null)")
+                .addStatement("return getStringSet(key, defaultValue)")
+                .nextControlFlow("else")
+                .addStatement("return rxSharedPreferences.getStringSet(key)")
+                .endControlFlow();
+
+        return result.build();
+    }
+
+    private MethodSpec createObjectGetterMethod() {
+        TypeVariableName typeVariable = TypeVariableName.get("T");
+        MethodSpec.Builder result = MethodSpec.methodBuilder("getObject")
+                .addAnnotation(NonNull.class)
+                .addTypeVariable(typeVariable)
+                .addParameter(STRING, "key")
+                .addParameter(typeVariable, "defaultValue")
+                .addParameter(getConverterType(typeVariable), "converter")
+                .returns(getRxPreferenceType(typeVariable));
+
+        if (expose) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+
+        result.addStatement("return rxSharedPreferences.getObject(key, defaultValue, converter)");
+
+        return result.build();
+    }
+
     private MethodSpec createPreferenceGetterMethod(Preference preference) {
         String name = preference.getName();
 
@@ -231,9 +505,9 @@ final class PreferencesSet {
         }
 
         result.beginControlFlow("if ($L != null)", name)
-                .addStatement("return rxSharedPreferences.$L($S, $L)", getGetterMethodPrefix(preference), preference.getKeyName(), name)
+                .addStatement("return $L($S, $L)", getGetterMethodPrefix(preference), preference.getKeyName(), name)
                 .nextControlFlow("else")
-                .addStatement("return rxSharedPreferences.$L($S)", getGetterMethodPrefix(preference), preference.getKeyName())
+                .addStatement("return $L($S)", getGetterMethodPrefix(preference), preference.getKeyName())
                 .endControlFlow();
 
         return result.build();
@@ -256,7 +530,7 @@ final class PreferencesSet {
                 .endControlFlow();
 
         result.addStatement(
-                "return rxSharedPreferences.getEnum($S, $L, $T.class)", preference.getKeyName(), preference.getName(), preference.getTypeName());
+                "return getEnum($S, $L, $T.class)", preference.getKeyName(), preference.getName(), preference.getTypeName());
 
         return result.build();
     }
@@ -277,7 +551,7 @@ final class PreferencesSet {
                 .addStatement("throw new $T($S)", ILLEGAL_STATE_EXCEPTION, exceptionText)
                 .endControlFlow();
 
-        result.addStatement("return rxSharedPreferences.getObject($S, $L, $L)", preference.getKeyName(), preference.getName(), getConverterFieldName(preference));
+        result.addStatement("return getObject($S, $L, $L)", preference.getKeyName(), preference.getName(), getConverterFieldName(preference));
 
         return result.build();
     }
@@ -339,11 +613,19 @@ final class PreferencesSet {
     }
 
     private ParameterizedTypeName getRxPreferenceType(Preference preference) {
-        return ParameterizedTypeName.get(PREFERENCE, preference.getTypeName());
+        return getRxPreferenceType(preference.getTypeName());
+    }
+
+    private ParameterizedTypeName getRxPreferenceType(TypeName typeName) {
+        return ParameterizedTypeName.get(PREFERENCE, typeName);
     }
 
     private ParameterizedTypeName getConverterType(Preference preference) {
-        return ParameterizedTypeName.get(CONVERTER, preference.getTypeName());
+        return getConverterType(preference.getTypeName());
+    }
+
+    private ParameterizedTypeName getConverterType(TypeName typeName) {
+        return ParameterizedTypeName.get(CONVERTER, typeName);
     }
 
     private String getConverterTypeName(Preference preference) {
