@@ -629,18 +629,23 @@ final class PreferencesSet {
     }
 
     private String getConverterTypeName(Preference preference) {
-        String typeClassName;
-        if (preference.getTypeName() instanceof ParameterizedTypeName) {
-            ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) preference.getTypeName();
-            typeClassName = parameterizedTypeName.rawType.simpleName();
+        return CaseFormat.LOWER_CAMEL.to(
+                CaseFormat.UPPER_CAMEL, getNameForType(preference.getTypeName()) + "Converter");
+    }
+
+    private String getNameForType(TypeName typeName) {
+        String name;
+        if (typeName instanceof ParameterizedTypeName) {
+            ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) typeName;
+            name = parameterizedTypeName.rawType.simpleName();
             for (TypeName typeArgument : parameterizedTypeName.typeArguments) {
-                typeClassName += ClassName.bestGuess(typeArgument.toString()).simpleName();
+                name += getNameForType(typeArgument);
             }
         } else {
-            typeClassName = ClassName.bestGuess(preference.getTypeName().toString()).simpleName();
+            name = ClassName.bestGuess(typeName.toString()).simpleName();
         }
-        return CaseFormat.LOWER_CAMEL.to(
-                CaseFormat.UPPER_CAMEL, typeClassName + "Converter");
+
+        return name;
     }
 
     private String getConverterFieldName(Preference preference) {
